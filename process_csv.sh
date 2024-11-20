@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Set paths
-SCRIPT_DIR="/home/ert2030/klipper/scripts"
+SCRIPT_DIR="/home/username/klipper/scripts"
 CSV_DIR="/tmp"
-OUTPUT_DIR="/home/ert2030"
-ARCHIVE_DIR="/home/ert2030/calibration_data_archive"
+OUTPUT_DIR="/home/username"
+ARCHIVE_DIR="/home/username/calibration_data_archive"
 PYTHON_SCRIPT="calibrate_shaper.py"
 
 # Prepare directories
@@ -80,7 +80,6 @@ archive_files() {
 # Main script execution
 prepare_directories
 process_files "calibration_data_x_*.csv" "calibration_data_x_*.csv"
-process_files "calibration_data_y_*.csv" "calibration_data_y_*.csv"
 archive_files
 echo "Script Completed Sucessfully! You can now download the PNG files."
 
