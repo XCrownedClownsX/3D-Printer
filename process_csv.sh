@@ -79,7 +79,7 @@ archive_files() {
 
 # Main script execution
 prepare_directories
-process_files "calibration_data_x_*.csv" "calibration_data_x_*.csv"
+process_files "calibration_data_x_*.csv" "calibration_data_y_*.csv"
 archive_files
 echo "Script Completed Sucessfully! You can now download the PNG files."
 
