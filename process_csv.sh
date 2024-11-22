@@ -6,6 +6,7 @@ CSV_DIR="/tmp"
 OUTPUT_DIR="/home/username"
 ARCHIVE_DIR="/home/username/calibration_data_archive"
 PYTHON_SCRIPT="calibrate_shaper.py"
+FILE_PATTERN="calibration_data_*.csv"
 
 # Prepare directories
 prepare_directories() {
@@ -31,20 +32,18 @@ progress_bar() {
 
 # Process files with progress bar
 process_files() {
-    local file_pattern=$1
-    local file_label=$2
-    local files=( "$CSV_DIR"/$file_pattern )
+    local files=( "$CSV_DIR"/$FILE_PATTERN )
     local total_files=${#files[@]}
 
     if [ $total_files -eq 0 ]; then
-        echo "No $file_label files found."
+        echo "No files found matching calibration_data_*."
         return
     fi
 
-    echo "Processing $file_label files..."
     progress_bar 0 $total_files  # Initialize progress bar at 0%
     local count=0
     for file in "${files[@]}"; do
+        echo "Processing file: $file"
         [ -f "$file" ] || continue
         count=$((count + 1))
         output_file="${file##*/}"
@@ -52,12 +51,12 @@ process_files() {
         python3 "$SCRIPT_DIR/$PYTHON_SCRIPT" "$file" -o "$OUTPUT_DIR/$output_file" > /dev/null
         if [ $? -eq 0 ]; then
             progress_bar $count $total_files
+            echo -e "\nProcessed $file successfully."
         else
             echo -e "\nError: Failed to process $file."
             exit 1
         fi
     done
-    echo -e "\nFinished processing $file_label files."
 }
 
 # Archive CSV files by date
@@ -79,7 +78,7 @@ archive_files() {
 
 # Main script execution
 prepare_directories
-process_files "calibration_data_x_*.csv" "calibration_data_y_*.csv"
+process_files 
 archive_files
 echo "Script Completed Sucessfully! You can now download the PNG files."
 
