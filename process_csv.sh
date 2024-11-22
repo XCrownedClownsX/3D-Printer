@@ -18,20 +18,20 @@ prepare_directories() {
     done
 }
 
-# Progress bar function
-progress_bar() {
-    local progress=$1
-    local total=$2
-    local percent=$((progress * 100 / total))
+# Progress bar function (per file)
+progress_bar_per_file() {
+    local percent=$1
     local bar_width=50
-    local filled=$((progress * bar_width / total))
+    local filled=$((percent * bar_width / 100))
     local empty=$((bar_width - filled))
 
-    printf "\r[%-${bar_width}s] %d%% (%d/%d)" "$(printf '#%.0s' $(seq 1 $filled))" $percent $progress $total
+    # Generate the progress bar
+    printf "[%-${bar_width}s] %d%%" "$(printf '#%.0s' $(seq 1 $filled))" $percent
 }
 
-# Process files with progress bar
+# Process files with a progress bar that resets per file
 process_files() {
+    echo "========== Processing Files =========="
     local files=( "$CSV_DIR"/$FILE_PATTERN )
     local total_files=${#files[@]}
 
@@ -40,28 +40,38 @@ process_files() {
         return
     fi
 
-    progress_bar 0 $total_files  # Initialize progress bar at 0%
     local count=0
     for file in "${files[@]}"; do
-        echo "Processing file: $file"
         [ -f "$file" ] || continue
         count=$((count + 1))
         output_file="${file##*/}"
         output_file="${output_file%.*}.png"
+
+        # Show initial progress for the current file
+        printf "\nProcessing File %d of %d: %-40s\n" "$count" "$total_files" "$(basename "$file")"
+        printf "Progress: "
+        progress_bar_per_file 0
+
+        # Run the Python script for processing
         python3 "$SCRIPT_DIR/$PYTHON_SCRIPT" "$file" -o "$OUTPUT_DIR/$output_file" > /dev/null
         if [ $? -eq 0 ]; then
-            progress_bar $count $total_files
-            echo -e "\nProcessed $file successfully."
+            # Update the progress bar to 100% after processing
+            printf "\rProgress: "
+            progress_bar_per_file 100
+            printf "\nStatus: Successfully processed '%s'.\n" "$(basename "$file")"
         else
-            echo -e "\nError: Failed to process $file."
+            printf "\nStatus: Error processing '%s'.\n" "$(basename "$file")"
             exit 1
         fi
+        echo "----------------------------------------"
     done
+    printf "\nAll files processed successfully.\n\n"
 }
 
 # Archive CSV files by date
 archive_files() {
-    echo "Archiving CSV files..."
+    echo "=========== Archiving Files ============"
+    local archived=0
     for file in "$CSV_DIR"/*.csv; do
         [ -f "$file" ] || continue
         file_date=$(stat --format='%y' "$file" | cut -d ' ' -f 1)
@@ -71,15 +81,24 @@ archive_files() {
             mkdir -p "$archive_path"
             echo "Created archive directory: $archive_path"
         fi
-        mv "$file" "$archive_path" && echo "Moved $file to $archive_path"
+        mv "$file" "$archive_path" && echo "Moved $(basename "$file") to $archive_path"
+        archived=$((archived + 1))
     done
-    echo "Archiving completed."
+    if [ $archived -eq 0 ]; then
+        echo "No files to archive."
+    else
+        echo -e "\nArchiving completed. Total files archived: $archived."
+    fi
+    echo -e "========================================\n"
 }
 
 # Main script execution
+echo "========== Starting Script ==========="
 prepare_directories
-process_files 
+process_files
 archive_files
-echo "Script Completed Sucessfully! You can now download the PNG files."
-
-# End of Script
+echo "=============== Summary ================"
+echo "Processed PNG files are available in: $OUTPUT_DIR"
+echo "Archived CSV files are stored in: $ARCHIVE_DIR"
+echo -e "\nScript Completed Successfully!"
+echo "========================================"
